@@ -22,7 +22,6 @@ id aSelf;
 @end
 
 OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler, EventRef anEvent, void *userData);
-OSStatus handleHotKeyPress2(EventHandlerCallRef nextHandler, EventRef anEvent, void *userData);
 
 @implementation SpeechService
 
@@ -52,7 +51,7 @@ OSStatus handleHotKeyPress2(EventHandlerCallRef nextHandler, EventRef anEvent, v
     InstallApplicationEventHandler(&handleHotKeyPress,1,&eventType,NULL,NULL);
     
     //ToDo - make the keystroke configurable in some UI.
-    RegisterEventHotKey(53, optionKey, speakKeyId, GetApplicationEventTarget(), 0, &hotKeyRef);
+    RegisterEventHotKey(38, cmdKey, speakKeyId, GetApplicationEventTarget(), 0, &hotKeyRef);
     
     EventHotKeyRef hotKeyRef2;
     EventHotKeyID speakKeyId2;
@@ -61,7 +60,7 @@ OSStatus handleHotKeyPress2(EventHandlerCallRef nextHandler, EventRef anEvent, v
  
     
     //ToDo - make the keystroke configurable in some UI.
-    RegisterEventHotKey(1, optionKey, speakKeyId2, GetApplicationEventTarget(), 0, &hotKeyRef2); //alt+s for pause
+    RegisterEventHotKey(40, cmdKey, speakKeyId2, GetApplicationEventTarget(), 0, &hotKeyRef2); //alt+s for pause
 }
 
 OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler,EventRef theEvent,void *userData){
