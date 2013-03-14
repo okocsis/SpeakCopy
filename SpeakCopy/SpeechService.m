@@ -22,6 +22,7 @@ id aSelf;
 @end
 
 OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler, EventRef anEvent, void *userData);
+OSStatus handleHotKeyPress2(EventHandlerCallRef nextHandler, EventRef anEvent, void *userData);
 
 @implementation SpeechService
 
@@ -32,11 +33,13 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler, EventRef anEvent, vo
     if (self) {
         self.speech = [[NSSpeechSynthesizer alloc] init];
         aSelf = self;
+        isPaused = NO;
     }
     return self;
 }
 
 #define kSpeakHotKeyId 123
+#define kSpeakHotKeyId2 124
 
 - (void) startListening {
     EventHotKeyRef hotKeyRef;     
@@ -49,7 +52,16 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler, EventRef anEvent, vo
     InstallApplicationEventHandler(&handleHotKeyPress,1,&eventType,NULL,NULL);
     
     //ToDo - make the keystroke configurable in some UI.
-    RegisterEventHotKey(3, optionKey+controlKey, speakKeyId, GetApplicationEventTarget(), 0, &hotKeyRef);
+    RegisterEventHotKey(53, optionKey, speakKeyId, GetApplicationEventTarget(), 0, &hotKeyRef);
+    
+    EventHotKeyRef hotKeyRef2;
+    EventHotKeyID speakKeyId2;
+    speakKeyId2.signature ='spk2';
+    speakKeyId2.id = kSpeakHotKeyId2;
+ 
+    
+    //ToDo - make the keystroke configurable in some UI.
+    RegisterEventHotKey(1, optionKey, speakKeyId2, GetApplicationEventTarget(), 0, &hotKeyRef2); //alt+s for pause
 }
 
 OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler,EventRef theEvent,void *userData){
@@ -61,17 +73,49 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler,EventRef theEvent,voi
         case kSpeakHotKeyId:
             [aSelf speakPastedText];
             break;
+        case kSpeakHotKeyId2:
+            [aSelf pausePastedText];
+            break;
     }
  
     return noErr;
 }
 
-- (void) speakPastedText {
-    if ([self.speech isSpeaking]) {
-        [self.speech stopSpeaking];
-    } else {
-        [self doCopy];
-        [self.speech startSpeakingString:[self fetchPastedText]];
+
+
+
+- (void) speakPastedText
+{
+    if (isPaused)
+    {
+        [self.speech continueSpeaking];
+        isPaused = NO;
+    }
+    else
+    {
+        if ([self.speech isSpeaking])
+        {
+            [self.speech stopSpeaking];
+        }
+        else
+        {
+            [self doCopy];
+            [self.speech startSpeakingString:[self fetchPastedText]];
+        }
+
+    }
+    
+}
+- (void) pausePastedText {
+    if ([self.speech isSpeaking])
+    {
+        [self.speech pauseSpeakingAtBoundary:NSSpeechWordBoundary];
+        isPaused = YES;
+    }
+    else
+    {
+        [self.speech continueSpeaking];
+        isPaused = NO;
     }
 }
 
@@ -105,5 +149,6 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler,EventRef theEvent,voi
     CFRelease(keyDown);
     CFRelease(source);
 }
+
 
 @end

@@ -9,5 +9,8 @@
 
 
 @interface SpeechService : NSObject
+{
+    BOOL isPaused;
+}
 - (void) startListening;
 @end
