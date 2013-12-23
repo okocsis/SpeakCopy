@@ -8,9 +8,7 @@
 
 
 
-@interface SpeechService : NSObject
-{
-    BOOL isPaused;
-}
+@interface SpeechService : NSObject< NSSpeechSynthesizerDelegate >
+
 - (void) startListening;
 @end
