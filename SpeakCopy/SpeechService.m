@@ -18,8 +18,9 @@ id aSelf;
 @property (nonatomic) BOOL stoppedOnDemand;
 @property (nonatomic, strong) NSSpeechSynthesizer* speech;
 @property (atomic, strong) NSMutableArray *sentencesToSpeakArray;
+@property (atomic, strong) NSMutableArray *paragraphIndexesArray;
 @property (nonatomic) NSUInteger sentencesToSpeakArrayIndex;
-
+@property (nonatomic) NSUInteger paragraphIndexesArrayIndex;
 
 
 - (void) speakPastedText;
@@ -48,7 +49,9 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler, EventRef anEvent, vo
         aSelf = self;
         _isPaused = NO;
         _sentencesToSpeakArray = [NSMutableArray new];
-        
+        _paragraphIndexesArray = [NSMutableArray new];
+        _sentencesToSpeakArrayIndex = 0;
+        _paragraphIndexesArrayIndex = 0;
     }
     return self;
 }
@@ -57,18 +60,47 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler, EventRef anEvent, vo
 #define kSpeakHotKeyId2 124
 #define kSpeakHotKeyId3 125
 #define kSpeakHotKeyId4 126
+#define kSpeakHotKeyId5 127
+#define kSpeakHotKeyId6 128
 - (void) incrSentencesToSpeakArrayIndex
 {
-    if (self.sentencesToSpeakArrayIndex < [self.sentencesToSpeakArray count]-1)
+    if (self.sentencesToSpeakArrayIndex < [self.sentencesToSpeakArray count])
     {
-    ++_sentencesToSpeakArrayIndex;
+        ++_sentencesToSpeakArrayIndex;
+        NSNumber *tempNum = [NSNumber numberWithUnsignedInteger:_sentencesToSpeakArrayIndex];
+        if ([self.paragraphIndexesArray containsObject:tempNum])
+        {
+            self.paragraphIndexesArrayIndex = [self.paragraphIndexesArray indexOfObject:tempNum];
+        }
     }
 }
 - (void) decrSentencesToSpeakArrayIndex
 {
     if (self.sentencesToSpeakArrayIndex > 0)
     {
-    --_sentencesToSpeakArrayIndex;
+        --_sentencesToSpeakArrayIndex;
+        NSNumber *tempNum = [NSNumber numberWithUnsignedInteger:_sentencesToSpeakArrayIndex];
+        if ([self.paragraphIndexesArray containsObject:tempNum])
+        {
+            self.paragraphIndexesArrayIndex = [self.paragraphIndexesArray indexOfObject:tempNum];
+        }
+    }
+}
+- (void) incrParagraphsIndexesArrayIndex
+{
+    if (self.paragraphIndexesArrayIndex < [self.paragraphIndexesArray count])
+    {
+        ++_paragraphIndexesArrayIndex;
+        self.sentencesToSpeakArrayIndex = [self.paragraphIndexesArray[_paragraphIndexesArrayIndex] unsignedIntegerValue];
+    }
+    else self.sentencesToSpeakArrayIndex = [self.sentencesToSpeakArray count];
+}
+- (void) decrParagraphsIndexesArrayIndex
+{
+    if (self.paragraphIndexesArrayIndex > 0)
+    {
+        --_paragraphIndexesArrayIndex;
+        self.sentencesToSpeakArrayIndex = [self.paragraphIndexesArray[_paragraphIndexesArrayIndex] unsignedIntegerValue];
     }
 }
 - (void) startListening
@@ -113,6 +145,27 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler, EventRef anEvent, vo
     //ToDo - make the keystroke configurable in some UI.
     RegisterEventHotKey(40, cmdKey+optionKey, speakKeyId4, GetApplicationEventTarget(), 0, &hotKeyRef4);
     //cmd+otpion+k for for step one senctece forward
+    
+    EventHotKeyRef hotKeyRef5;
+    EventHotKeyID speakKeyId5;
+    speakKeyId5.signature ='spk5';
+    speakKeyId5.id = kSpeakHotKeyId5;
+    
+    
+    //ToDo - make the keystroke configurable in some UI.
+    RegisterEventHotKey(38, cmdKey+optionKey+controlKey, speakKeyId5, GetApplicationEventTarget(), 0, &hotKeyRef5);
+    //cmd+otpion+j for step one senctece back
+    
+    EventHotKeyRef hotKeyRef6;
+    EventHotKeyID speakKeyId6;
+    speakKeyId6.signature ='spk6';
+    speakKeyId6.id = kSpeakHotKeyId6;
+    
+    
+    //ToDo - make the keystroke configurable in some UI.
+    RegisterEventHotKey(40, cmdKey+optionKey+controlKey, speakKeyId6, GetApplicationEventTarget(), 0, &hotKeyRef6);
+    //cmd+otpion+k for for step one senctece forward
+
 }
 
 OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler,EventRef theEvent,void *userData)
@@ -130,14 +183,38 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler,EventRef theEvent,voi
             break;
         case kSpeakHotKeyId3:
             [aSelf decrSentencesToSpeakArrayIndex];
-            [[aSelf speech] stopSpeaking];
-            [aSelf setStoppedOnDemand:YES];
+            if ([[aSelf speech] isSpeaking])
+            {
+                [[aSelf speech] stopSpeaking];
+                [aSelf setStoppedOnDemand:YES];
+            }
             [aSelf speakAtSomeIndex];
             break;
         case kSpeakHotKeyId4:
             [aSelf incrSentencesToSpeakArrayIndex];
-            [[aSelf speech] stopSpeaking];
-            [aSelf setStoppedOnDemand:YES];
+            if ([[aSelf speech] isSpeaking])
+            {
+                [[aSelf speech] stopSpeaking];
+                [aSelf setStoppedOnDemand:YES];
+            }
+            [aSelf speakAtSomeIndex];
+            break;
+        case kSpeakHotKeyId5:
+            [aSelf decrParagraphsIndexesArrayIndex];
+            if ([[aSelf speech] isSpeaking])
+            {
+                [[aSelf speech] stopSpeaking];
+                [aSelf setStoppedOnDemand:YES];
+            }
+            [aSelf speakAtSomeIndex];
+            break;
+        case kSpeakHotKeyId6:
+            [aSelf incrParagraphsIndexesArrayIndex];
+            if ([[aSelf speech] isSpeaking])
+            {
+                [[aSelf speech] stopSpeaking];
+                [aSelf setStoppedOnDemand:YES];
+            }
             [aSelf speakAtSomeIndex];
             break;
     }
@@ -167,7 +244,8 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler,EventRef theEvent,voi
             [self doCopy];
             [self fetchPastedText];
             self.sentencesToSpeakArrayIndex = 0;
-            [self.speech startSpeakingString:self.sentencesToSpeakArray[self.sentencesToSpeakArrayIndex]];
+            self.paragraphIndexesArrayIndex = 0;
+            [self speakAtSomeIndex];
 
         }
 
@@ -185,11 +263,39 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler,EventRef theEvent,voi
     
     
 }
+- (void) writeFirstThreeWordsToPasteBoard:(NSString *)words
+{
+    __block int i =0;
+    __block NSUInteger rangeLenght = 0;
+    NSString * threeWords = @"";
+    
+    [words enumerateSubstringsInRange:NSMakeRange(0,[words length])  options:NSStringEnumerationByWords usingBlock:^(NSString *word, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
+        if (i<3)
+        {
+            rangeLenght = substringRange.location + substringRange.length;
+        }
+        else *stop = YES;
+        ++i;
+    }];
+    threeWords = [words substringWithRange:NSMakeRange(0, rangeLenght)];
 
+    NSPasteboard* pasteboard = [NSPasteboard generalPasteboard];
+    [pasteboard clearContents];
+    BOOL success = [pasteboard writeObjects:[NSArray arrayWithObject:threeWords]];
+    if (!success)
+    {
+        NSLog(@"pasboard write failed");
+    }
+}
 -(void) speakAtSomeIndex
 {
-
-        [self.speech startSpeakingString:self.sentencesToSpeakArray[self.sentencesToSpeakArrayIndex]];
+    if (self.sentencesToSpeakArrayIndex < [self.sentencesToSpeakArray count])
+    {
+        NSString *senteceToSpeak = self.sentencesToSpeakArray[self.sentencesToSpeakArrayIndex];
+        [self writeFirstThreeWordsToPasteBoard:senteceToSpeak];
+        [self.speech startSpeakingString:senteceToSpeak];
+    }
+    
 
 }
 - (void) pausePastedText
@@ -205,6 +311,14 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler,EventRef theEvent,voi
         _isPaused = NO;
     }
 }
+-(NSArray *) splitParagraphToSentences:(NSString *) paragraph
+{
+    NSMutableArray *sentecesArray = [NSMutableArray new];
+    [paragraph enumerateSubstringsInRange:NSMakeRange(0,[paragraph length]) options:NSStringEnumerationBySentences usingBlock:^(NSString *sentence, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
+        [sentecesArray addObject:sentence];
+    }];
+    return (NSArray *)sentecesArray;
+}
 
 - (NSString*) fetchPastedText
 {
@@ -219,14 +333,26 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler,EventRef theEvent,voi
         NSArray* objectsToPaste = [pasteboard readObjectsForClasses:classArray options:options];
         text = [objectsToPaste objectAtIndex:0];
     }
-    
-    [text enumerateSubstringsInRange:NSMakeRange(0, [text length]) options:NSStringEnumerationBySentences usingBlock:^(NSString *sentece, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
-        if (![sentece isEqual:@"\n"])
+    if ([self.sentencesToSpeakArray count] != 0)
+    {
+        [self.sentencesToSpeakArray removeAllObjects];
+        [self.paragraphIndexesArray removeAllObjects];
+    }
+    [self.paragraphIndexesArray addObject:@0];
+    [text enumerateSubstringsInRange:NSMakeRange(0, [text length]) options:NSStringEnumerationByParagraphs usingBlock:^(NSString *paragraph, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
+        if ([paragraph isNotEqualTo:@""])
         {
-            [self.sentencesToSpeakArray addObject:sentece];
+            NSArray *sentences = [self splitParagraphToSentences:paragraph];
+            NSUInteger *paragraphIndex = [[self.paragraphIndexesArray lastObject] unsignedIntegerValue] + [sentences count] ;
+            [self.paragraphIndexesArray addObject:[NSNumber numberWithUnsignedInteger:paragraphIndex]  ];
+            
+            [self.sentencesToSpeakArray addObjectsFromArray:sentences];
         }
-
     }];
+    [self.paragraphIndexesArray removeLastObject];
+    
+    
+//    [self.sentencesToSpeakArray addObject:@"\n"];
     return text;
 }
 
