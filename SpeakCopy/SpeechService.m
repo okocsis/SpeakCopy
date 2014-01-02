@@ -12,15 +12,16 @@
 id aSelf;
 
 @interface SpeechService()
-{
-    BOOL _isPaused;
-}
+
+@property (nonatomic) BOOL isPaused;
 @property (nonatomic) BOOL stoppedOnDemand;
+@property (nonatomic) BOOL isLastWordInSentence;
 @property (nonatomic, strong) NSSpeechSynthesizer* speech;
 @property (atomic, strong) NSMutableArray *sentencesToSpeakArray;
 @property (atomic, strong) NSMutableArray *paragraphIndexesArray;
 @property (nonatomic) NSUInteger sentencesToSpeakArrayIndex;
 @property (nonatomic) NSUInteger paragraphIndexesArrayIndex;
+@property (nonatomic) NSRange lastWordRangeInSentence;
 
 
 - (void) speakPastedText;
@@ -48,6 +49,7 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler, EventRef anEvent, vo
         self.speech.delegate = self;
         aSelf = self;
         _isPaused = NO;
+        _isLastWordInSentence = NO;
         _sentencesToSpeakArray = [NSMutableArray new];
         _paragraphIndexesArray = [NSMutableArray new];
         _sentencesToSpeakArrayIndex = 0;
@@ -245,6 +247,7 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler,EventRef theEvent,voi
             [self fetchPastedText];
             self.sentencesToSpeakArrayIndex = 0;
             self.paragraphIndexesArrayIndex = 0;
+            self.isLastWordInSentence = NO;
             [self speakAtSomeIndex];
 
         }
@@ -262,6 +265,14 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler,EventRef theEvent,voi
     _stoppedOnDemand = NO;
     
     
+}
+- (void)speechSynthesizer:(NSSpeechSynthesizer *)sender willSpeakWord:(NSRange)characterRange ofString:(NSString *)string
+{
+    if (self.lastWordRangeInSentence.location == characterRange.location)
+    {
+        self.isLastWordInSentence = YES;
+    }
+    else self.isLastWordInSentence = NO;
 }
 - (void) writeFirstThreeWordsToPasteBoard:(NSString *)words
 {
@@ -293,6 +304,7 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler,EventRef theEvent,voi
     {
         NSString *senteceToSpeak = self.sentencesToSpeakArray[self.sentencesToSpeakArrayIndex];
         [self writeFirstThreeWordsToPasteBoard:senteceToSpeak];
+        [self lookForLastWordInSentence:senteceToSpeak];
         [self.speech startSpeakingString:senteceToSpeak];
     }
     
@@ -305,17 +317,35 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler,EventRef theEvent,voi
         [self.speech pauseSpeakingAtBoundary:NSSpeechWordBoundary];
         _isPaused = YES;
     }
-    else
+    else if (_isPaused)
     {
+        if (self.isLastWordInSentence)
+        {
+            [self speechSynthesizer:self.speech didFinishSpeaking:YES];
+            self.isLastWordInSentence = NO;
+        }
+        else
+        {
         [self.speech continueSpeaking];
+        }
         _isPaused = NO;
     }
 }
+-(void) lookForLastWordInSentence:(NSString *) sentence
+{
+    [sentence enumerateSubstringsInRange:NSMakeRange(0,[sentence length]) options:NSStringEnumerationByWords usingBlock:^(NSString *word, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
+        self.lastWordRangeInSentence = substringRange;
+    }];
+}
+
 -(NSArray *) splitParagraphToSentences:(NSString *) paragraph
 {
     NSMutableArray *sentecesArray = [NSMutableArray new];
     [paragraph enumerateSubstringsInRange:NSMakeRange(0,[paragraph length]) options:NSStringEnumerationBySentences usingBlock:^(NSString *sentence, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
-        [sentecesArray addObject:sentence];
+        if ([sentence isNotEqualTo:@" "] )
+        {
+            [sentecesArray addObject:sentence];
+        }
     }];
     return (NSArray *)sentecesArray;
 }
@@ -343,7 +373,7 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler,EventRef theEvent,voi
         if ([paragraph isNotEqualTo:@""])
         {
             NSArray *sentences = [self splitParagraphToSentences:paragraph];
-            NSUInteger *paragraphIndex = [[self.paragraphIndexesArray lastObject] unsignedIntegerValue] + [sentences count] ;
+            NSUInteger paragraphIndex = [[self.paragraphIndexesArray lastObject] unsignedIntegerValue] + [sentences count] ;
             [self.paragraphIndexesArray addObject:[NSNumber numberWithUnsignedInteger:paragraphIndex]  ];
             
             [self.sentencesToSpeakArray addObjectsFromArray:sentences];
