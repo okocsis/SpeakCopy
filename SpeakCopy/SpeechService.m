@@ -281,7 +281,7 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler,EventRef theEvent,voi
     NSString * threeWords = @"";
     
     [words enumerateSubstringsInRange:NSMakeRange(0,[words length])  options:NSStringEnumerationByWords usingBlock:^(NSString *word, NSRange substringRange, NSRange enclosingRange, BOOL *stop) {
-        if (i<3)
+        if (i<5)
         {
             rangeLenght = substringRange.location + substringRange.length;
         }
@@ -312,7 +312,7 @@ OSStatus handleHotKeyPress(EventHandlerCallRef nextHandler,EventRef theEvent,voi
 }
 - (void) pausePastedText
 {
-    if ([self.speech isSpeaking])
+    if ([self.speech isSpeaking] || !_isPaused)
     {
         [self.speech pauseSpeakingAtBoundary:NSSpeechWordBoundary];
         _isPaused = YES;
