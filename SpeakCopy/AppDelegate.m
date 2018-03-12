@@ -9,13 +9,16 @@
 #import "AppDelegate.h"
 #import "SpeechService.h"
 
+@interface AppDelegate()
+
+@property (nonatomic, strong) SpeechService* speechService;
+
+@end
+
 @implementation AppDelegate
 
-@synthesize window = _window;
-@synthesize speechService;
-
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-    self.speechService = [[SpeechService alloc] init];
+    self.speechService = [SpeechService new];
     
     [self.speechService startListening];
 }
