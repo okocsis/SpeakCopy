@@ -1,7 +1,15 @@
-*.DS_Store
+## OS X files
+.DS_Store
+.DS_Store?
+.Trashes
+.Spotlight-V100
+*.swp
 
-# Xcode
-build/*
+## Xcode build files
+DerivedData/
+build/
+
+## Xcode private settings
 *.pbxuser
 !default.pbxuser
 *.mode1v3
@@ -10,8 +18,70 @@ build/*
 !default.mode2v3
 *.perspectivev3
 !default.perspectivev3
-*.xcworkspace
-!default.xcworkspace
-xcuserdata
-profile
+
+####
+# Xcode 4 - semi-personal settings
+#
+# Apple Shared data that Apple put in the wrong folder
+# c.f. http://stackoverflow.com/a/19260712/153422
+#     FROM ANSWER: Apple says "don't ignore it"
+#     FROM COMMENTS: Apple is wrong; Apple code is too buggy to trust; there are no known negative side-effects to ignoring Apple's unofficial advice and instead doing the thing that actively fixes bugs in Xcode
+# Up to you, but ... current advice: ignore it.
+*.xccheckout
+
+#
+#
+# OPTION 1: ---------------------------------
+#     throw away ALL personal settings (including custom schemes!
+#     - unless they are "shared")
+# As per build/ and DerivedData/, this ought to have a trailing slash
+#
+# NB: this is exclusive with OPTION 2 below
+#xcuserdata/
+#.xcuserdatad/
+
+# OPTION 2: ---------------------------------
+#     get rid of ALL personal settings, but KEEP SOME OF THEM
+#     - NB: you must manually uncomment the bits you want to keep
+#
+# NB: this *requires* git v1.8.2 or above; you may need to upgrade to latest OS X,
+#    or manually install git over the top of the OS X version
+# NB: this is exclusive with OPTION 1 above
+#
+NESDKiOS.xcworkspace/xcuserdata/**/*
+*.xcuserdatad/
+
+#     (requires option 2 above): Personal Schemes
+#
+!NESDKiOS.xcworkspace/xcuserdata/**/xcschemes/*
+####
+
+## Other
+*.xccheckout
 *.moved-aside
+*.xcuserstate
+*.xcscmblueprint
+
+## Obj-C/Swift specific
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+## Swift Package Manager
+.build/
+
+## Carthage
+Carthage/Build
+
+# fastlane
+# https://github.com/fastlane/fastlane/blob/master/docs/Gitignore.md
+
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+
+## Playgrounds
+timeline.xctimeline
+playground.xcworkspace

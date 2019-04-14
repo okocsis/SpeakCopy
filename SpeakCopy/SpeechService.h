@@ -6,9 +6,8 @@
 //  Copyright (c) 2011 Atlantia Software. All rights reserved.
 //
 
+@interface SpeechService : NSObject
 
+- (void)startListening;
 
-@interface SpeechService : NSObject< NSSpeechSynthesizerDelegate >
-
-- (void) startListening;
 @end
